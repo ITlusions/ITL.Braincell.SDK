@@ -10,12 +10,13 @@ env:
 
 jobs:
   publish:
-    name: Publish to GitHub Packages
+    name: Publish Release
     runs-on: ubuntu-latest
     
     permissions:
       contents: read
       packages: write
+      id-token: write
     
     steps:
     - name: Checkout code
@@ -40,8 +41,15 @@ jobs:
       run: |
         python -m twine upload dist/* --non-interactive --skip-existing
     
+    - name: Publish to PyPI
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        packages-dir: dist/
+      continue-on-error: true
+    
     - name: Publish success
       run: |
         echo "Package published to GitHub Packages"
-        echo "Install with: pip install --index-url https://github.com/ITlusions/ITL.Braincell.SDK/python itl-braincell-sdk"
+        echo "GitHub Packages: pip install --index-url https://github.com/ITlusions/ITL.Braincell.SDK/python itl-braincell-sdk"
+        echo "PyPI: pip install itl-braincell-sdk"
         echo "See: ${{ github.server_url }}/${{ github.repository }}/releases"
