@@ -41,7 +41,16 @@ jobs:
       run: |
         python -m twine upload dist/* --non-interactive --skip-existing
     
-    - name: Publish to PyPI
+    - name: Publish to TestPyPI (prerelease)
+      if: github.event.release.prerelease
+      uses: pypa/gh-action-pypi-publish@release/v1
+      with:
+        repository-url: https://test.pypi.org/legacy/
+        packages-dir: dist/
+      continue-on-error: true
+    
+    - name: Publish to PyPI (stable)
+      if: github.event.release != null && !github.event.release.prerelease
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
         packages-dir: dist/
@@ -49,7 +58,8 @@ jobs:
     
     - name: Publish success
       run: |
-        echo "Package published to GitHub Packages"
-        echo "GitHub Packages: pip install --index-url https://github.com/ITlusions/ITL.Braincell.SDK/python itl-braincell-sdk"
-        echo "PyPI: pip install itl-braincell-sdk"
+        TARGETS="GitHub Packages"
+        if ${{ github.event.release.prerelease }}; then TARGETS="$TARGETS, TestPyPI"; fi
+        if ${{ !github.event.release.prerelease }}; then TARGETS="$TARGETS, PyPI"; fi
+        echo "Package published to $TARGETS"
         echo "See: ${{ github.server_url }}/${{ github.repository }}/releases"
