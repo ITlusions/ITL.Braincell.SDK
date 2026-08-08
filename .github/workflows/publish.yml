@@ -68,5 +68,5 @@ jobs:
     - name: Publish success
       run: |
         REPO=${{ github.event.release != null && !github.event.release.prerelease && 'PyPI' || 'TestPyPI' }}
-        echo "✅ Package published to $REPO"
-        echo "📦 See: ${{ github.server_url }}/${{ github.repository }}/releases"
+        echo "Package published to $REPO"
+        echo "See: ${{ github.server_url }}/${{ github.repository }}/releases"

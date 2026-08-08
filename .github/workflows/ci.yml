@@ -45,7 +45,7 @@ jobs:
         if [ -d "tests" ]; then
           pytest tests/ -v --cov=src/itl_braincell_sdk --cov-report=term-missing
         else
-          echo "✓ No pytest directory found, skipping pytest"
+          echo "No pytest directory found, skipping pytest"
         fi
       shell: bash
     
@@ -59,13 +59,12 @@ jobs:
       run: |
         python -c "
         from itl_braincell_sdk.core.config import Settings
-        print('✓ Core imports successful')
+        print('Core imports successful')
         
-        # Test configuration loading
         config = Settings()
-        print('✓ Configuration loading successful')
+        print('Configuration loading successful')
         
-        print('✓ SDK basic functionality test passed')
+        print('SDK basic functionality test passed')
         "
     
     - name: Test examples
@@ -73,7 +72,7 @@ jobs:
         if [ -d "examples" ] && [ -f "examples/quickstart.py" ]; then
           cd examples && python quickstart.py
         else
-          echo "✓ No examples/quickstart.py found"
+          echo "No examples/quickstart.py found"
         fi
       shell: bash
 
@@ -106,7 +105,7 @@ jobs:
         whl = glob.glob('dist/*.whl')[0]
         with zipfile.ZipFile(whl) as z:
             files = z.namelist()
-            print('✓ Wheel package structure:')
+            print('Wheel package structure:')
             for f in sorted(files)[:10]:
                 print(f'  {f}')
             if len(files) > 10:
@@ -119,7 +118,7 @@ jobs:
         source test-env/bin/activate
         pip install --upgrade pip
         pip install dist/*.whl
-        python -c "from itl_braincell_sdk.core.config import Settings; print('✓ Package installation successful')"
+        python -c "from itl_braincell_sdk.core.config import Settings; print('Package installation successful')"
         deactivate
       shell: bash
     
@@ -132,7 +131,7 @@ jobs:
         if-no-files-found: error
 
   lint-and-security:
-    name: Security & Code Quality
+    name: Security and Code Quality
     runs-on: ubuntu-latest
     
     steps:
@@ -155,19 +154,19 @@ jobs:
 
     - name: Run bandit security linter
       run: |
-        echo "🔍 Running bandit security linter..."
+        echo "Running bandit security linter..."
         bandit -r src/ -f json -o bandit-report.json || true
         bandit -r src/ 
 
     - name: Run safety check for dependencies
       run: |
-        echo "🔍 Checking dependency vulnerabilities..."
+        echo "Checking dependency vulnerabilities..."
         safety check --json --output safety-report.json || true
         safety check
 
     - name: Run pip-audit for vulnerability scanning
       run: |
-        echo "🔍 Scanning for known vulnerabilities..."
+        echo "Scanning for known vulnerabilities..."
         pip-audit --format=json --output=audit-report.json || true
         pip-audit
 
@@ -181,5 +180,3 @@ jobs:
           safety-report.json
           audit-report.json
         retention-days: 30
-
-  tag-release:
