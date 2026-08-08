@@ -12,6 +12,8 @@ jobs:
   publish:
     name: Publish Release
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
     
     permissions:
       contents: read
