@@ -29,23 +29,26 @@ jobs:
     
     - name: Build distribution
       run: |
-        python -m pip install --upgrade pip build
+        python -m pip install --upgrade pip build twine
         python -m build
         ls -lah dist/
     
     - name: Publish to TestPyPI (prerelease)
       if: github.event.release.prerelease
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        repository-url: https://test.pypi.org/legacy/
-        packages-dir: dist/
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.TESTPYPI_TOKEN }}
+      run: |
+        python -m twine upload --repository testpypi dist/* --non-interactive --skip-existing
       continue-on-error: true
     
     - name: Publish to PyPI (stable)
       if: github.event.release != null && !github.event.release.prerelease
-      uses: pypa/gh-action-pypi-publish@release/v1
-      with:
-        packages-dir: dist/
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+      run: |
+        python -m twine upload dist/* --non-interactive --skip-existing
       continue-on-error: true
     
     - name: Publish success
