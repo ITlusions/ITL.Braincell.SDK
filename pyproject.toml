@@ -1,10 +1,10 @@
 [build-system]
-requires = ["setuptools>=68", "wheel"]
+requires = ["setuptools>=68", "wheel", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "itl-braincell-sdk"
-version = "1.0.0"
+dynamic = ["version"]
 description = "BrainCell SDK — shared core library with cells, services, and data models for the ITL memory platform"
 requires-python = ">=3.12"
 dependencies = [
@@ -78,3 +78,8 @@ target-version = "py312"
 line-length = 120
 select = ["E", "F", "I", "UP", "B", "SIM", "TCH", "ANN", "RUF"]
 ignore = ["E501", "ANN101"]
+
+[tool.setuptools-scm]
+write_to = "src/itl_braincell_sdk/_version.py"
+write_to_template = '__version__ = "{version}"\n'
+tag_regex = "^v(?P<version>\\d+\\.\\d+\\.\\d+(?:[a-zA-Z0-9\\-\\.]*)?)$"
