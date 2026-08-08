@@ -33,3 +33,48 @@ include = ["itl_braincell_sdk*"]
 
 [tool.setuptools.package-data]
 "itl_braincell_sdk" = ["*.sql", "*.json", "*.yaml", "*.yml"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "mypy>=1.5.0",
+    "black>=23.7.0",
+    "ruff>=0.0.280",
+    "bandit>=1.7.5",
+    "safety>=2.3.5",
+    "pip-audit>=2.6.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "."]
+asyncio_mode = "auto"
+addopts = "--cov=src/itl_braincell_sdk --cov-report=term-missing --cov-fail-under=80"
+
+[tool.coverage.run]
+branch = true
+source = ["src/itl_braincell_sdk"]
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__init__.py",
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+ignore_missing_imports = true
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+
+[tool.black]
+line-length = 120
+target-version = ["py312"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+select = ["E", "F", "I", "UP", "B", "SIM", "TCH", "ANN", "RUF"]
+ignore = ["E501", "ANN101"]
