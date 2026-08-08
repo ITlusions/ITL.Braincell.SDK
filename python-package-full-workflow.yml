@@ -1,0 +1,276 @@
+# Composite Python workflow template: Build → Test → Security → Publish
+# This template orchestrates all stages for a Python package
+# Stages: Build & Test → Security Scan → Package → Publish
+
+parameters:
+  - name: pythonVersion
+    type: string
+    default: '3.12'
+  - name: projectPath
+    type: string
+    default: 'src/'
+  - name: testPath
+    type: string
+    default: 'tests/'
+  - name: minCoveragePercent
+    type: number
+    default: 80
+  - name: enableSecurity
+    type: boolean
+    default: true
+  - name: publishRegistry
+    type: string
+    default: 'none'
+    values:
+      - none
+      - PyPI
+      - TestPyPI
+      - AzureArtifacts
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+  # Stage 1: Build & Test
+  - stage: BuildAndTest
+    displayName: 'Build & Test Python Package'
+    jobs:
+      - job: BuildPythonPackage
+        displayName: 'Build, Lint, Test'
+        variables:
+          pythonVersion: ${{ parameters.pythonVersion }}
+          projectPath: ${{ parameters.projectPath }}
+          testPath: ${{ parameters.testPath }}
+          minCoveragePercent: ${{ parameters.minCoveragePercent }}
+        steps:
+          # Setup Python
+          - task: UsePythonVersion@0
+            inputs:
+              versionSpec: $(pythonVersion)
+              addToPath: true
+            displayName: 'Setup Python $(pythonVersion)'
+
+          # Install dependencies
+          - bash: |
+              python -m pip install --upgrade pip setuptools wheel
+              pip install -e ".[dev]"
+            displayName: 'Install dependencies'
+
+          # Ruff lint
+          - bash: |
+              ruff check $(projectPath) --select E,F,I,UP,B,SIM,TCH,ANN,RUF
+            displayName: 'Lint (ruff)'
+            continueOnError: false
+
+          # MyPy type checking (strict)
+          - bash: |
+              mypy $(projectPath) --strict
+            displayName: 'Type-check (mypy strict)'
+            continueOnError: false
+
+          # Pytest with coverage
+          - bash: |
+              pytest $(testPath) \
+                --cov=$(projectPath) \
+                --cov-report=xml \
+                --cov-report=html \
+                --cov-report=term-missing \
+                --cov-fail-under=$(minCoveragePercent) \
+                --junitxml=junit/test-results.xml \
+                -v
+            displayName: 'Unit tests (pytest, min $(minCoveragePercent)% coverage)'
+            continueOnError: false
+
+          # Publish test results
+          - task: PublishTestResults@2
+            inputs:
+              testResultsFormat: JUnit
+              testResultsFiles: junit/test-results.xml
+              testRunTitle: 'Python Unit Tests'
+            displayName: 'Publish test results'
+            condition: always()
+
+          # Publish code coverage
+          - task: PublishCodeCoverageResults@1
+            inputs:
+              codeCoverageTool: Cobertura
+              summaryFileLocation: $(System.DefaultWorkingDirectory)/coverage.xml
+              reportDirectory: $(System.DefaultWorkingDirectory)/htmlcov
+            displayName: 'Publish code coverage'
+            condition: always()
+
+          # Build distribution (wheel + sdist)
+          - bash: |
+              python -m pip install --upgrade build
+              python -m build
+            displayName: 'Build distribution (wheel + sdist)'
+            continueOnError: false
+
+          # Display artifacts
+          - bash: |
+              echo "##[group]Built distributions:"
+              ls -lh dist/
+              echo "##[endgroup]"
+            displayName: 'Show built artifacts'
+            condition: always()
+
+          # Publish artifacts
+          - task: PublishBuildArtifacts@1
+            inputs:
+              PathtoPublish: '$(System.DefaultWorkingDirectory)/dist'
+              ArtifactName: 'python-package'
+              publishLocation: 'Container'
+            displayName: 'Publish wheel + sdist artifacts'
+            condition: always()
+
+  # Stage 2: Security Scan (optional)
+  - ${{ if parameters.enableSecurity }}:
+    - stage: SecurityScan
+      displayName: 'Security Scan & Compliance'
+      dependsOn: BuildAndTest
+      condition: succeeded()
+      jobs:
+        - job: SecurityChecks
+          displayName: 'SAST, Secrets, Dependencies'
+          variables:
+            pythonVersion: ${{ parameters.pythonVersion }}
+            projectPath: ${{ parameters.projectPath }}
+          steps:
+            - task: UsePythonVersion@0
+              inputs:
+                versionSpec: $(pythonVersion)
+                addToPath: true
+              displayName: 'Setup Python $(pythonVersion)'
+
+            # Semgrep SAST
+            - bash: |
+                pip install semgrep
+                semgrep --config .semgrep.yml $(projectPath) --json --output semgrep-report.json || true
+                semgrep --config .semgrep.yml $(projectPath)
+              displayName: 'Semgrep SAST scan'
+              continueOnError: true
+
+            # pip-audit (dependency CVEs)
+            - bash: |
+                pip install pip-audit
+                pip-audit --desc
+              displayName: 'pip-audit: Check for vulnerable dependencies'
+              continueOnError: true
+
+            # Detect secrets (credential scanner)
+            - bash: |
+                pip install detect-secrets
+                detect-secrets scan --baseline .secrets.baseline $(projectPath) 2>/dev/null || echo "No secrets baseline"
+                detect-secrets scan $(projectPath) --all-files 2>&1 | grep -i "secret\|credential" || echo "No secrets detected"
+              displayName: 'Credential scan'
+              continueOnError: true
+
+            # Generate SBOM (Software Bill of Materials)
+            - bash: |
+                pip install cyclonedx-bom
+                cyclonedx-bom -o pyproject.toml --output-format json > sbom.json
+                echo "##[group]SBOM generated:"
+                cat sbom.json
+                echo "##[endgroup]"
+              displayName: 'Generate CycloneDX SBOM'
+              continueOnError: true
+
+            # Publish security reports
+            - task: PublishBuildArtifacts@1
+              inputs:
+                PathtoPublish: '$(System.DefaultWorkingDirectory)'
+                ArtifactName: 'security-reports'
+                publishLocation: 'Container'
+              displayName: 'Publish security reports'
+              condition: always()
+
+  # Stage 3: Publish (conditional)
+  - ${{ if ne(parameters.publishRegistry, 'none') }}:
+    - stage: PublishPackage
+      displayName: 'Publish to ${{ parameters.publishRegistry }}'
+      dependsOn: ${{ if parameters.enableSecurity }}('SecurityScan')${{ else }}('BuildAndTest')
+      condition: succeeded()
+      jobs:
+        - deployment: PublishToRegistry
+          displayName: 'Deploy package'
+          pool:
+            vmImage: ubuntu-latest
+          environment:
+            name: python-publish
+          strategy:
+            runOnce:
+              deploy:
+                steps:
+                  # Download artifacts
+                  - download: current
+                    artifact: python-package
+                    displayName: 'Download package artifacts'
+
+                  # Setup Python
+                  - task: UsePythonVersion@0
+                    inputs:
+                      versionSpec: ${{ parameters.pythonVersion }}
+                      addToPath: true
+                    displayName: 'Setup Python ${{ parameters.pythonVersion }}'
+
+                  # Install twine
+                  - bash: |
+                      pip install twine
+                    displayName: 'Install twine'
+
+                  # Show artifacts
+                  - bash: |
+                      echo "##[group]Artifacts to publish:"
+                      ls -lh $(Pipeline.Workspace)/python-package/
+                      echo "##[endgroup]"
+                    displayName: 'Show artifacts'
+
+                  # Publish to PyPI (main + tags only)
+                  - ${{ if eq(parameters.publishRegistry, 'PyPI') }}:
+                    - bash: |
+                        python -m twine upload $(Pipeline.Workspace)/python-package/* \
+                          --repository pypi \
+                          --skip-existing \
+                          --verbose
+                      displayName: 'Publish to PyPI'
+                      env:
+                        TWINE_USERNAME: __token__
+                        TWINE_PASSWORD: $(PyPiToken)
+                      condition: or(
+                        eq(variables['Build.SourceBranch'], 'refs/heads/main'),
+                        startsWith(variables['Build.SourceBranch'], 'refs/tags/v')
+                      )
+
+                  # Publish to TestPyPI (release branches)
+                  - ${{ if eq(parameters.publishRegistry, 'TestPyPI') }}:
+                    - bash: |
+                        python -m twine upload $(Pipeline.Workspace)/python-package/* \
+                          --repository testpypi \
+                          --repository-url https://test.pypi.org/legacy/ \
+                          --skip-existing \
+                          --verbose
+                      displayName: 'Publish to TestPyPI'
+                      env:
+                        TWINE_USERNAME: __token__
+                        TWINE_PASSWORD: $(TestPyPiToken)
+
+                  # Publish to Azure Artifacts (develop + hotfix)
+                  - ${{ if eq(parameters.publishRegistry, 'AzureArtifacts') }}:
+                    - bash: |
+                        python -m pip install twine keyring artifacts-keyring
+                        python -m twine upload $(Pipeline.Workspace)/python-package/* \
+                          --repository-url $(ARTIFACTS_FEED_URL) \
+                          --skip-existing \
+                          --verbose
+                      displayName: 'Publish to Azure Artifacts'
+                      env:
+                        ARTIFACTS_FEED_URL: 'https://pkgs.dev.azure.com/itlusions/_packaging/itlusions-feed/pypi/upload'
+
+                  # Log summary
+                  - bash: |
+                      echo "##[section]Publish Summary"
+                      echo "Registry: ${{ parameters.publishRegistry }}"
+                      echo "Branch: $(Build.SourceBranch)"
+                      echo "Timestamp: $(date -Iseconds)"
+                      echo "##[endsection]"
+                    displayName: 'Publish summary'

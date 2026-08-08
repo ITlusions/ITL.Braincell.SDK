@@ -10,12 +10,20 @@ Start with your use case:
 - **[Getting Started](01-GETTING-STARTED.md)** — Install, set up, and run your first example
 - **[Architecture Overview](00-OVERVIEW.md)** — Understand cells, plugins, and the system design
 - **[API Reference](04-API-REFERENCE.md)** — Complete SDK API documentation
+- **[Knowledge Systems & RAG](08-AI-KNOWLEDGE-SYSTEMS.md)** — Vector search, semantic queries, AI integration
 - **[RAG Explained](09-RAG-EXPLAINED.md)** — Learn about Retrieval-Augmented Generation (upcoming feature)
 
 ### **For Plugin Developers**
 - **[Plugin Development Guide](03-PLUGIN-DEVELOPMENT.md)** — Create your first plugin
 - **[Examples](07-EXAMPLES/)** — Real-world plugin examples
 - **[Advanced Features](02-ARCHITECTURE.md#advanced-plugin-features)** — Configuration, lifecycle hooks, dependencies, bundling, hot reload
+
+### **For Platform Integration**
+- **[Amalia Integration Guide](10-AMALIA-INTEGRATION.md)** — Integrate Amalia threat detection with BrainCell persistence
+  - 3-phase roadmap: Synchronous API (Sprint 3) → Async queue (Sprint 4) → MCP tools (Sprint 5)
+  - Finding storage mapping (where each threat type gets stored)
+  - Implementation guide with code examples
+  - Quick wins and deployment procedures
 
 ### **For DevOps & Operations**
 - **[Deployment Guide](05-DEPLOYMENT.md)** — Docker, migrations, production setup

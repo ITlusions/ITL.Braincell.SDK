@@ -1,0 +1,120 @@
+# .semgrep.yml
+# Semgrep configuration for ITL.Braincell.SDK
+# Scans for security issues, code quality, and compliance violations
+# Mapped to NIST CSF + ISO 27001 controls
+
+rules:
+  # Security: Injection attacks
+  - id: no-sql-injection
+    pattern-either:
+      - pattern: |
+          $DB = $CONN.execute(...)
+          $DB.execute($USER_INPUT)
+      - pattern: |
+          $QUERY = f"SELECT * FROM ... WHERE id = {$USER_INPUT}"
+    message: "Potential SQL injection - use parameterized queries"
+    languages: [python]
+    severity: ERROR
+  
+  # Security: Hardcoded secrets
+  - id: no-hardcoded-secrets
+    pattern-either:
+      - patterns:
+          - pattern-inside: |
+              password = "..."
+          - metavariable-pattern:
+              metavariable: $password
+              patterns:
+                - pattern-regex: '.*[Pp]ass[Ww]ord.*'
+      - patterns:
+          - pattern-inside: |
+              api_key = "..."
+          - metavariable-pattern:
+              metavariable: $api_key
+              patterns:
+                - pattern-regex: '.*[Kk]ey.*'
+    message: "Hardcoded secret detected - use environment variables or secure storage"
+    languages: [python]
+    severity: CRITICAL
+  
+  # Security: Insecure SSL verification
+  - id: no-insecure-ssl
+    patterns:
+      - pattern-either:
+          - pattern: |
+              requests.get(..., verify=False)
+          - pattern: |
+              requests.post(..., verify=False)
+          - pattern: |
+              urllib.urlopen(..., context=ssl._create_unverified_context())
+    message: "SSL verification disabled - enables man-in-the-middle attacks"
+    languages: [python]
+    severity: ERROR
+  
+  # Security: Unsafe deserialization
+  - id: no-unsafe-pickle
+    patterns:
+      - pattern-either:
+          - pattern: pickle.loads($DATA)
+          - pattern: pickle.load($FD)
+    message: "pickle.loads() is unsafe - use json or msgpack instead"
+    languages: [python]
+    severity: ERROR
+  
+  # Quality: Bare except
+  - id: no-bare-except
+    patterns:
+      - pattern: |
+          try:
+              ...
+          except:
+              ...
+    message: "Bare except catches SystemExit and KeyboardInterrupt - use except Exception"
+    languages: [python]
+    severity: WARNING
+  
+  # Quality: Mutable default arguments
+  - id: no-mutable-defaults
+    patterns:
+      - pattern: |
+          def $FUNC(..., $ARG=$DEFAULT, ...):
+              ...
+      - metavariable-pattern:
+          metavariable: $DEFAULT
+          patterns:
+            - pattern-either:
+                - pattern: "[]"
+                - pattern: "{}"
+                - pattern: "set()"
+    message: "Mutable default argument - use None and initialize in function body"
+    languages: [python]
+    severity: WARNING
+  
+  # Compliance: Unlogged errors
+  - id: unlogged-exception
+    patterns:
+      - pattern: |
+          except $EXCEPTION:
+              pass
+    message: "Exception caught but not logged - add logging for audit trail (ISO 27001 A.12.4)"
+    languages: [python]
+    severity: WARNING
+
+# Rulesets
+defaults:
+  rulesets:
+    - python
+    - security
+    - django
+    - flask
+    - owasp
+
+# Exclude paths
+paths:
+  exclude:
+    - tests/
+    - venv/
+    - .venv/
+    - dist/
+    - build/
+    - *.egg-info/

@@ -456,3 +456,4 @@ See also:
 - [02-ARCHITECTURE.md](02-ARCHITECTURE.md) — System design
 - [04-API-REFERENCE.md](04-API-REFERENCE.md) — Weaviate integration
 - [05-DEPLOYMENT.md](05-DEPLOYMENT.md) — Production setup
+- **Security Analysis Tools** — See [SECURITY-ANALYSIS-GUIDE.md](https://github.com/ITlusions/itl-braincell-cells-security/blob/main/SECURITY-ANALYSIS-GUIDE.md) for binary analysis, SAST, and dependency scanning integration
