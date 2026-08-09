@@ -9,7 +9,7 @@ on:
 
 jobs:
   ci:
-    uses: ./.github/workflows/ci.template.yml
+    uses: ITlusions/ITL.Github/.github/workflows/_reusable-python-ci.yml@main
     with:
       python_version: '3.12'
       test_import_path: 'itl_braincell_sdk.core.config'

@@ -19,7 +19,7 @@ on:
 
 jobs:
   publish:
-    uses: ./.github/workflows/publish.template.yml
+    uses: ITlusions/ITL.Github/.github/workflows/_reusable-python-publish.yml@main
     with:
       python_version: '3.12'
       testpypi_url: 'https://test.pypi.org/legacy/'
