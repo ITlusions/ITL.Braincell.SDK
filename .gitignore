@@ -1,0 +1,17 @@
+# Coverage reports
+coverage.xml
+.coverage
+.coverage.*
+htmlcov/
+
+# Python build artifacts
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/

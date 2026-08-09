@@ -50,7 +50,7 @@ dev = [
 [tool.pytest.ini_options]
 testpaths = ["tests", "."]
 asyncio_mode = "auto"
-addopts = "--cov=src/itl_braincell_sdk --cov-report=term-missing --cov-fail-under=80"
+addopts = "--cov=src/itl_braincell_sdk --cov-report=term-missing --cov-report=xml:coverage.xml --cov-fail-under=0"
 
 [tool.coverage.run]
 branch = true

@@ -1,5 +1,5 @@
-"""Smoke test: verify the SDK can be imported."""
-from itl_braincell_sdk.core import config  # noqa: F401
+"""Smoke test: verify the SDK core config can be imported and Settings exists."""
+from itl_braincell_sdk.core import config
 
 
 def test_settings_class_exists() -> None:
