@@ -13,21 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - name: Fetch PR metadata
-        id: metadata
-        run: |
-          echo "pr_number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-          echo "pr_title=${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
-
-      - name: Enable auto-merge for Dependabot PRs
-        run: |
-          # Auto-merge only patch updates (safer, no breaking changes)
-          if [[ "${{ steps.metadata.outputs.pr_title }}" =~ (patch|patch update) ]]; then
-            echo "✅ Auto-merging patch update: ${{ steps.metadata.outputs.pr_title }}"
-            gh pr merge --auto --squash ${{ steps.metadata.outputs.pr_number }} || echo "Auto-merge may already be enabled or CI is not complete"
-          else
-            echo "⏳ Manual review required for: ${{ steps.metadata.outputs.pr_title }}"
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
+      - name: Auto-merge Dependabot updates
+        uses: ITlusions/ITL.Github/actions/dependabot-auto-merge@v0.2.3
+        with:
+          pr_number: ${{ github.event.pull_request.number }}
+          pr_title: ${{ github.event.pull_request.title }}
+          merge_strategy: squash
+          auto_merge_types: patch
