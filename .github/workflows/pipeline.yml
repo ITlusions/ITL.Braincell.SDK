@@ -21,7 +21,7 @@ on:
 
 jobs:
   ci:
-    uses: ITlusions/ITL.Github/.github/workflows/_reusable-python-ci.yml@main
+    uses: ITlusions/ITL.Github/.github/workflows/_reusable-python-ci.yml@v0.2.3
     with:
       python_version: '3.12'
       test_import_path: 'itl_braincell_sdk.core.config'
@@ -29,7 +29,7 @@ jobs:
       src_directory: 'src'
 
   publish:
-    uses: ITlusions/ITL.Github/.github/workflows/_reusable-python-publish.yml@main
+    uses: ITlusions/ITL.Github/.github/workflows/_reusable-python-publish.yml@v0.2.3
     if: |
       github.event_name == 'release' ||
       startsWith(github.ref, 'refs/heads/feature/') ||
