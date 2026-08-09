@@ -1,24 +1,56 @@
 version: 2
+
+# Group related updates together to reduce PR spam
+groups:
+  github-actions:
+    patterns:
+      - "actions/*"
+      - ".github/workflows/*"
+    commit-message:
+      prefix: "ci"
+  dependencies:
+    patterns:
+      - "pyproject.toml"
+      - "requirements*.txt"
+    commit-message:
+      prefix: "deps"
+
 updates:
-  # GitHub Actions updates
+  # GitHub Actions updates (root level + workflows)
   - package-ecosystem: github-actions
     directory: /
-    schedule:
-      interval: weekly
-      day: monday
-    open-pull-requests-limit: 10
-    pull-request-branch-name:
-      separator: /
-
-  # Reusable workflows (ITL.Github templates)
-  - package-ecosystem: github-actions
-    directory: /.github/workflows
     schedule:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
     pull-request-branch-name:
       separator: /
-    commit-message:
-      prefix: "ci"
-      include: "scope"
+    groups:
+      - github-actions
+    # Auto-merge safe, non-breaking updates
+    auto-merge:
+      - match:
+          dependency-type: "patch"
+          update-type: "version-update:semver-patch"
+      - match:
+          dependency-type: "minor"
+          update-type: "version-update:semver-minor"
+
+  # Python package dependencies
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    pull-request-branch-name:
+      separator: /
+    groups:
+      - dependencies
+    # Security updates only (no feature/minor version bumps)
+    security-updates-only: false
+    # Auto-merge patch versions only (safe bugfixes)
+    auto-merge:
+      - match:
+          dependency-type: "patch"
+          update-type: "version-update:semver-patch"
