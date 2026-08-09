@@ -1,0 +1,24 @@
+version: 2
+updates:
+  # GitHub Actions updates
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 10
+    pull-request-branch-name:
+      separator: /
+
+  # Reusable workflows (ITL.Github templates)
+  - package-ecosystem: github-actions
+    directory: /.github/workflows
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    pull-request-branch-name:
+      separator: /
+    commit-message:
+      prefix: "ci"
+      include: "scope"
