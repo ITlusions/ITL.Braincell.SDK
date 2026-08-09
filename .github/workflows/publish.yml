@@ -3,6 +3,8 @@ name: Publish - Release
 on:
   release:
     types: [ published ]
+  push:
+    branches: [ 'feature/**', 'hotfix/**' ]
   workflow_dispatch:
     inputs:
       publish_target:
@@ -54,6 +56,18 @@ jobs:
             echo "publish_to=pypi" >> $GITHUB_OUTPUT
             echo "publish_reason=GitHub Release (stable)" >> $GITHUB_OUTPUT
           fi
+        elif [[ "$TRIGGER" == "push" ]]; then
+          # Automatic push: detect from branch
+          if [[ "$BRANCH" == feature/* ]]; then
+            echo "publish_to=testpypi" >> $GITHUB_OUTPUT
+            echo "publish_reason=Automatic: feature branch ($BRANCH)" >> $GITHUB_OUTPUT
+          elif [[ "$BRANCH" == hotfix/* ]]; then
+            echo "publish_to=pypi" >> $GITHUB_OUTPUT
+            echo "publish_reason=Automatic: hotfix branch ($BRANCH)" >> $GITHUB_OUTPUT
+          else
+            echo "publish_to=none" >> $GITHUB_OUTPUT
+            echo "publish_reason=Branch $BRANCH not configured for automatic publishing" >> $GITHUB_OUTPUT
+          fi
         elif [[ "$MANUAL_TARGET" != "auto" ]]; then
           # Manual workflow_dispatch with explicit target
           echo "publish_to=$MANUAL_TARGET" >> $GITHUB_OUTPUT
@@ -62,10 +76,10 @@ jobs:
           # Manual workflow_dispatch with auto: detect from branch
           if [[ "$BRANCH" == feature/* ]]; then
             echo "publish_to=testpypi" >> $GITHUB_OUTPUT
-            echo "publish_reason=Feature branch ($BRANCH)" >> $GITHUB_OUTPUT
+            echo "publish_reason=Manual override (auto): feature branch ($BRANCH)" >> $GITHUB_OUTPUT
           elif [[ "$BRANCH" == hotfix/* ]]; then
             echo "publish_to=pypi" >> $GITHUB_OUTPUT
-            echo "publish_reason=Hotfix branch ($BRANCH)" >> $GITHUB_OUTPUT
+            echo "publish_reason=Manual override (auto): hotfix branch ($BRANCH)" >> $GITHUB_OUTPUT
           else
             echo "publish_to=none" >> $GITHUB_OUTPUT
             echo "publish_reason=Branch $BRANCH not configured for publishing" >> $GITHUB_OUTPUT
